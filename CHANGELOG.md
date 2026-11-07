@@ -9,4 +9,5 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- Add eval_run_ledger package with Decimal accounting, RunRecord tracking, JSONL ledger operations, and summary CLI.
 - Initial project structure from the factory utility template.

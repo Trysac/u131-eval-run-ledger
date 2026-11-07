@@ -19,6 +19,9 @@ classifiers = [
 ]
 dependencies = []
 
+[project.scripts]
+eval-run-ledger = "eval_run_ledger.__main__:main"
+
 [project.urls]
 Homepage = "https://github.com/Trysac/u131-eval-run-ledger"
 Source = "https://github.com/Trysac/u131-eval-run-ledger"
