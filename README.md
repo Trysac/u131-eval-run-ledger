@@ -1,48 +1,45 @@
 # eval-run-ledger
 
-[![PyPI version](https://img.shields.io/pypi/v/trysac-eval-run-ledger)](https://pypi.org/project/trysac-eval-run-ledger/)
-[![License: MIT](https://img.shields.io/pypi/l/trysac-eval-run-ledger)](LICENSE)
-[![CI](https://github.com/Trysac/u131-eval-run-ledger/actions/workflows/ci.yml/badge.svg)](https://github.com/Trysac/u131-eval-run-ledger/actions/workflows/ci.yml)
+[![CI](https://github.com/Trysac/u131-eval-run-ledger/actions/workflows/ci.yml/badge.svg)](https://github.com/Trysac/u131-eval-run-ledger/actions)
 
-Append-only JSONL ledger of evaluation runs: duration from an injected clock, case count, tokens and Decimal cost per run, with a summary CLI
+Append-only JSONL ledger of evaluation runs, using an injected clock for timing and strict Decimal accounting for costs.
 
 ## Problem
 
-Describe in two or three sentences the concrete problem this utility solves, who hits it, and what
-they do today without it. Replace this paragraph when the first real feature lands.
+Teams compare evaluation runs on quality but often lack structured visibility into duration and cost per evaluation run. Per-call LLM cost trackers exist, but nothing records the evaluation run as a single atomic unit. This library provides a constant-memory, append-only, and diffable ledger.
 
-## Install
+## Installation
 
-```sh
-pip install trysac-eval-run-ledger
-# or
-uv add trysac-eval-run-ledger
+```bash
+pip install eval-run-ledger
 ```
-
-Requires Python 3.10 or newer. No runtime dependencies.
 
 ## Usage
 
 ```python
-import eval_run_ledger
+from datetime import datetime, timezone
+from eval_run_ledger import start_run, append_record
 
-# normalize() trims surrounding whitespace and lower-cases the text.
-print(eval_run_ledger.normalize("  Hello World "))  # -> "hello world"
-
-# Blank input is rejected explicitly instead of returning an empty string.
-try:
-    eval_run_ledger.normalize("   ")
-except ValueError as exc:
-    print(f"rejected: {exc}")
+run = start_run("eval-01", clock=lambda: datetime.now(timezone.utc))
+run.add_case("0.05", tokens_in=500, tokens_out=120)
+record = run.finish()
+append_record("eval_ledger.jsonl", record)
 ```
 
-## Documentation
+## Public API Summary
 
-- [Architecture](docs/ARCHITECTURE.md) and [decisions](docs/decisions/)
-- [Testing](docs/TESTING.md) and [security](docs/SECURITY.md)
-- [Project record](docs/PROJECT.md) and [stack](docs/STACK.md)
-- [Changelog](CHANGELOG.md) and [contributing guide](CONTRIBUTING.md)
+- `start_run(run_id: str, *, clock: Callable[[], datetime]) -> Run`: Initializes a tracker. Rejects invalid run_id (must match `^[A-Za-z0-9._-]+$`).
+- `Run.add_case(cost_usd: str | Decimal, *, tokens_in: int = 0, tokens_out: int = 0) -> None`: Accumulates metrics. Rejects floats to prevent precision loss.
+- `Run.finish() -> RunRecord`: Finalizes the run. Detects clock skew (time moving backward) and naive datetimes.
+- `RunRecord`: Frozen dataclass for storing results.
+- `append_record(path, record)`: Saves a record to JSONL. Automatically creates parent directories.
+- `read_records(path, *, max_bytes=10_000_000)`: Parses the ledger. Fails on files larger than `max_bytes`.
+- `LedgerError`: Raised for operational errors, providing error codes (`already_finished`, `corrupt_line`, etc.).
 
-## License
+## Why not alternative?
 
-[MIT](LICENSE) (c) 2026 Miguel Gomez
+The evaluation run is the atomic unit of comparison. Unlike per-call LLM pricing tables, `eval-run-ledger` records the run as a compact, exact, and diffable JSON line, ensuring minimal disk usage and simple analysis.
+
+## Security
+
+See [docs/SECURITY.md](docs/SECURITY.md).
