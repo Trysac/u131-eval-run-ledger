@@ -10,8 +10,10 @@ Teams compare evaluation runs on quality but often lack structured visibility in
 
 ## Installation
 
+Not published to PyPI yet. Install it from GitHub:
+
 ```bash
-pip install eval-run-ledger
+pip install "git+https://github.com/Trysac/u131-eval-run-ledger"
 ```
 
 ## Usage
